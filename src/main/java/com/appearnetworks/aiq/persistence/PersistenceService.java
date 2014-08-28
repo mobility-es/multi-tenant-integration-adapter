@@ -17,4 +17,5 @@ interface PersistenceService {
     long update(DocumentReference docRef, ObjectNode doc) throws UpdateException;
 
     void delete(DocumentReference docRef) throws UpdateException;
+
 }

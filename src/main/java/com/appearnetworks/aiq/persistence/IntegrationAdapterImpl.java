@@ -8,9 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
+import java.util.logging.Logger;
 
 @Component
 public class IntegrationAdapterImpl extends IntegrationAdapterBase {
+
+    private static Logger log = Logger.getLogger(IntegrationAdapterImpl.class.getName());
 
     @Autowired
     private PersistenceService persistenceService;
@@ -27,17 +30,35 @@ public class IntegrationAdapterImpl extends IntegrationAdapterBase {
 
     @Override
     public long insertDocument(String userId, String deviceId, DocumentReference docRef, ObjectNode doc) throws UpdateException {
-        return persistenceService.insert(docRef, doc);
+        try {
+            log.info("Inserting " + docRef);
+            return persistenceService.insert(docRef, doc);
+        } catch (UpdateException e) {
+            log.warning("Failure: " + e.getStatusCode());
+            throw e;
+        }
     }
 
     @Override
     public long updateDocument(String userId, String deviceId, DocumentReference docRef, ObjectNode doc) throws UpdateException {
-        return persistenceService.update(docRef, doc);
+        try {
+            log.info("Updating " + docRef);
+            return persistenceService.update(docRef, doc);
+        } catch (UpdateException e) {
+            log.warning("Failure: " + e.getStatusCode());
+            throw e;
+        }
     }
 
     @Override
     public void deleteDocument(String userId, String deviceId, DocumentReference docRef) throws UpdateException {
-        persistenceService.delete(docRef);
+        try {
+            log.info("Deleting " + docRef);
+            persistenceService.delete(docRef);
+        } catch (UpdateException e) {
+            log.warning("Failure: " + e.getStatusCode());
+            throw e;
+        }
     }
 
 }
