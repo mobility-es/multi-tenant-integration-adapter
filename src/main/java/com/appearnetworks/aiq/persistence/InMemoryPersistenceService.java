@@ -6,10 +6,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 @Repository
 public class InMemoryPersistenceService implements PersistenceService {
@@ -20,7 +20,11 @@ public class InMemoryPersistenceService implements PersistenceService {
 
     @Override
     public Collection<DocumentReference> list() {
-        return documents.values().stream().map(DocumentReference::new).collect(Collectors.toList());
+        ArrayList<DocumentReference> documentReferences = new ArrayList<>(documents.size());
+        for (Document document : documents.values()) {
+            documentReferences.add(new DocumentReference(document));
+        }
+        return documentReferences;
     }
 
     @Override
@@ -38,8 +42,8 @@ public class InMemoryPersistenceService implements PersistenceService {
         body.put(REV, initialRevision);
 
         Document existingDocument = documents.putIfAbsent(
-                docRef._id,
-                new Document(docRef._id, docRef._type, initialRevision, body));
+            docRef._id,
+            new Document(docRef._id, docRef._type, initialRevision, body));
 
         if (existingDocument == null) {
             return initialRevision;
@@ -55,9 +59,9 @@ public class InMemoryPersistenceService implements PersistenceService {
         body.put(REV, updatedRevision);
 
         boolean wasReplaced = documents.replace(
-                docRef._id,
-                new Document(docRef._id, docRef._type, docRef._rev, null),
-                new Document(docRef._id, docRef._type, updatedRevision, body));
+            docRef._id,
+            new Document(docRef._id, docRef._type, docRef._rev, null),
+            new Document(docRef._id, docRef._type, updatedRevision, body));
 
         if (wasReplaced)
             return updatedRevision;
@@ -68,8 +72,8 @@ public class InMemoryPersistenceService implements PersistenceService {
     @Override
     public void delete(DocumentReference docRef) throws UpdateException {
         boolean wasRemoved = documents.remove(
-                docRef._id,
-                new Document(docRef._id, docRef._type, docRef._rev, null));
+            docRef._id,
+            new Document(docRef._id, docRef._type, docRef._rev, null));
 
         if (wasRemoved)
             return;
