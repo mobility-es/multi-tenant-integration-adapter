@@ -7,7 +7,7 @@ An AppearIQ Integration Adapter which stores all documents sent by data sync fro
 Prerequisites
 -------------
 
-* Java SDK 7 or 8 [Download](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
+* Java JDK 7 or 8 [Download](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)
 
 * Maven 3.x [Download](http://maven.apache.org/download.cgi)
 
