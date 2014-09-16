@@ -8,7 +8,7 @@
    http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-4.0.xsd">
 
     <context:annotation-config/>
-    <context:component-scan base-package="com.appearnetworks.aiq.integrationframework,com.appearnetworks.aiq.persistence"/>
+    <context:component-scan base-package="com.appearnetworks.aiq.multitenant"/>
 
     <jee:jndi-lookup id="propertiesLocation" jndi-name="propertiesLocation"/>
     <context:property-placeholder location="${propertiesLocation}" />

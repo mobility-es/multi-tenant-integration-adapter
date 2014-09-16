@@ -1,7 +1,6 @@
-package com.appearnetworks.aiq.persistence;
+package com.appearnetworks.aiq.multitenant.impl.integration;
 
-import com.appearnetworks.aiq.integrationframework.integration.BusinessDocument;
-import com.appearnetworks.aiq.integrationframework.integration.DocumentReference;
+import com.appearnetworks.aiq.multitenant.integration.BusinessDocument;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public final class Document extends BusinessDocument {
@@ -24,11 +23,10 @@ public final class Document extends BusinessDocument {
 
         Document that = (Document) o;
 
-        if (_rev != that._rev) return false;
-        if (_id != null ? !_id.equals(that._id) : that._id != null) return false;
-        if (_type != null ? !_type.equals(that._type) : that._type != null) return false;
+        return _rev == that._rev &&
+               !(_id != null ? !_id.equals(that._id) : that._id != null) &&
+               !(_type != null ? !_type.equals(that._type) : that._type != null);
 
-        return true;
     }
 
     @Override
