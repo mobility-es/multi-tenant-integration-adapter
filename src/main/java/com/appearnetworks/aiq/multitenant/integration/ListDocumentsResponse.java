@@ -1,6 +1,4 @@
-package com.appearnetworks.aiq.multitenant.impl.integration;
-
-import com.appearnetworks.aiq.multitenant.integration.DocumentReference;
+package com.appearnetworks.aiq.multitenant.integration;
 
 import java.util.Collection;
 

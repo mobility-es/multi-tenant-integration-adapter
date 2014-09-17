@@ -1,6 +1,6 @@
-package com.appearnetworks.aiq.multitenant.impl;
+package com.appearnetworks.aiq.multitenant;
 
-import com.appearnetworks.aiq.multitenant.impl.server.IntegrationServiceImpl;
+import com.appearnetworks.aiq.multitenant.server.IntegrationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ public class ServerRegistrator {
     private String integrationUrl;
 
     @Autowired
-    private IntegrationServiceImpl integrationService;
+    private IntegrationService integrationService;
 
     private SecureRandom random = new SecureRandom();
 

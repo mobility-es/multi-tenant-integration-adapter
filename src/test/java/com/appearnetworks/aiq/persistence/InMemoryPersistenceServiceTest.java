@@ -2,8 +2,8 @@ package com.appearnetworks.aiq.persistence;
 
 import com.appearnetworks.aiq.multitenant.integration.DocumentReference;
 import com.appearnetworks.aiq.multitenant.integration.UpdateException;
-import com.appearnetworks.aiq.multitenant.impl.integration.InMemoryPersistenceService;
-import com.appearnetworks.aiq.multitenant.impl.integration.PersistenceService;
+import com.appearnetworks.aiq.multitenant.persistence.InMemoryPersistenceService;
+import com.appearnetworks.aiq.multitenant.persistence.PersistenceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.Before;

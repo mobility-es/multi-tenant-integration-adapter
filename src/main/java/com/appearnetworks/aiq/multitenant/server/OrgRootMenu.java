@@ -1,4 +1,4 @@
-package com.appearnetworks.aiq.multitenant.impl.server;
+package com.appearnetworks.aiq.multitenant.server;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.node.ObjectNode;

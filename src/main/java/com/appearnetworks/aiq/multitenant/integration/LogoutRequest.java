@@ -1,4 +1,4 @@
-package com.appearnetworks.aiq.multitenant.impl.integration;
+package com.appearnetworks.aiq.multitenant.integration;
 
 public final class LogoutRequest {
     public String userId;

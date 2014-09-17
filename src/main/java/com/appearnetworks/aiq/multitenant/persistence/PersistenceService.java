@@ -1,4 +1,4 @@
-package com.appearnetworks.aiq.multitenant.impl.integration;
+package com.appearnetworks.aiq.multitenant.persistence;
 
 import com.appearnetworks.aiq.multitenant.integration.DocumentReference;
 import com.appearnetworks.aiq.multitenant.integration.UpdateException;

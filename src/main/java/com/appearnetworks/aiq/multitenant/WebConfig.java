@@ -1,4 +1,4 @@
-package com.appearnetworks.aiq.multitenant.impl;
+package com.appearnetworks.aiq.multitenant;
 
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;

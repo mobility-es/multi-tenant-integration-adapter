@@ -1,12 +1,12 @@
-package com.appearnetworks.aiq.multitenant.impl.integration;
+package com.appearnetworks.aiq.multitenant.persistence;
 
+import com.appearnetworks.aiq.multitenant.integration.BusinessDocument;
 import com.appearnetworks.aiq.multitenant.integration.DocumentReference;
 import com.appearnetworks.aiq.multitenant.integration.UpdateException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,34 +18,31 @@ public class InMemoryPersistenceService implements PersistenceService {
 
     private static final String REV = "_rev";
 
-    private final ConcurrentMap<String, ConcurrentMap<String, Document>> organizations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ConcurrentMap<String, BusinessDocument>> organizations = new ConcurrentHashMap<>();
 
     @Override
     public Collection<DocumentReference> list(String orgName) {
-        ConcurrentMap<String, Document> documents = organizations.get(orgName);
+        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
         if (documents == null) {
             return Collections.emptyList();
         }
-
-        ArrayList<DocumentReference> documentReferences = new ArrayList<>(documents.size());
-        documentReferences.addAll(documents.values().stream().map(DocumentReference::new).collect(Collectors.toList()));
-        return documentReferences;
+        return documents.values().stream().map(DocumentReference::new).collect(Collectors.toList());
     }
 
     @Override
     public ObjectNode retrieve(String orgName, String docId) {
-        ConcurrentMap<String, Document> documents = organizations.get(orgName);
+        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
         if (documents == null) {
             return null;
         }
 
-        Document doc = documents.get(docId);
+        BusinessDocument doc = documents.get(docId);
         return (doc != null) ? doc.getBody() : null;
     }
 
     @Override
     public long insert(String orgName, DocumentReference docRef, ObjectNode body) throws UpdateException {
-        ConcurrentMap<String, Document> documents = organizations.get(orgName);
+        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
         if (documents == null) {
             documents = new ConcurrentHashMap<>();
             organizations.put(orgName, documents);
@@ -55,7 +52,7 @@ public class InMemoryPersistenceService implements PersistenceService {
 
         body.put(REV, initialRevision);
 
-        if (documents.putIfAbsent(docRef._id, new Document(docRef._id, docRef._type, initialRevision, body)) != null) {
+        if (documents.putIfAbsent(docRef._id, new BusinessDocument(docRef._id, docRef._type, initialRevision, body)) != null) {
             throw new UpdateException(HttpStatus.CONFLICT);
         }
 
@@ -64,7 +61,7 @@ public class InMemoryPersistenceService implements PersistenceService {
 
     @Override
     public long update(String orgName, DocumentReference docRef, ObjectNode body) throws UpdateException {
-        ConcurrentMap<String, Document> documents = organizations.get(orgName);
+        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
         if (documents == null) {
             throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
         }
@@ -74,8 +71,8 @@ public class InMemoryPersistenceService implements PersistenceService {
         body.put(REV, updatedRevision);
 
         if (! documents.replace(docRef._id,
-                                new Document(docRef._id, docRef._type, docRef._rev, null),
-                                  new Document(docRef._id, docRef._type, updatedRevision, body))) {
+                                new BusinessDocument(docRef._id, docRef._type, docRef._rev, null),
+                                  new BusinessDocument(docRef._id, docRef._type, updatedRevision, body))) {
             throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
         }
 
@@ -84,12 +81,12 @@ public class InMemoryPersistenceService implements PersistenceService {
 
     @Override
     public void delete(String orgName, DocumentReference docRef) throws UpdateException {
-        ConcurrentMap<String, Document> documents = organizations.get(orgName);
+        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
         if (documents == null) {
             throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
         }
 
-        if (! documents.remove(docRef._id, new Document(docRef._id, docRef._type, docRef._rev, null))) {
+        if (! documents.remove(docRef._id, new BusinessDocument(docRef._id, docRef._type, docRef._rev, null))) {
             throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
         }
 

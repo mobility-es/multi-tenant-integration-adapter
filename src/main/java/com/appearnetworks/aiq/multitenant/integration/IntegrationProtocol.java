@@ -1,8 +1,7 @@
-package com.appearnetworks.aiq.multitenant.impl.integration;
+package com.appearnetworks.aiq.multitenant.integration;
 
-import com.appearnetworks.aiq.multitenant.impl.ProtocolConstants;
-import com.appearnetworks.aiq.multitenant.integration.DocumentReference;
-import com.appearnetworks.aiq.multitenant.integration.UpdateException;
+import com.appearnetworks.aiq.multitenant.ProtocolConstants;
+import com.appearnetworks.aiq.multitenant.persistence.PersistenceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,7 +31,7 @@ import java.util.logging.Logger;
  * Implement the AIQ 8 integration protocol.
  */
 @Controller
-@RequestMapping(value = "/aiq/integration")
+@RequestMapping(value = "/aiq/integration/{orgName}")
 public class IntegrationProtocol {
 
     private static Logger LOGGER = Logger.getLogger(IntegrationProtocol.class.getName());
@@ -55,7 +54,7 @@ public class IntegrationProtocol {
         loggingConfiguration.close();
     }
 
-    @RequestMapping(value = "/datasync/{orgName}",
+    @RequestMapping(value = "/datasync",
                     method = RequestMethod.GET,
                     produces = MediaType.APPLICATION_JSON_VALUE)
     public
@@ -66,7 +65,7 @@ public class IntegrationProtocol {
         return new ListDocumentsResponse(persistenceService.list(orgName));
     }
 
-    @RequestMapping(value = "/datasync/{orgName}/{docType}/{docId:.*}",
+    @RequestMapping(value = "/datasync/{docType}/{docId:.*}",
                     method = RequestMethod.GET,
                     produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ObjectNode> getDocument(@PathVariable(ORG_NAME) String orgName,
@@ -88,7 +87,7 @@ public class IntegrationProtocol {
         }
     }
 
-    @RequestMapping(value = "/datasync/{orgName}/{docType}/{docId}/{name:.*}", method = RequestMethod.GET)
+    @RequestMapping(value = "/datasync/{docType}/{docId}/{name:.*}", method = RequestMethod.GET)
     public void getAttachment(@PathVariable(ORG_NAME) String orgName,
                               @PathVariable(DOC_TYPE) String docType,
                               @PathVariable(DOC_ID) String docId,
@@ -97,7 +96,7 @@ public class IntegrationProtocol {
         response.sendError(HttpStatus.NOT_FOUND.value());
     }
 
-    @RequestMapping(value = "/datasync/{orgName}/{docType}/{docId:.*}",
+    @RequestMapping(value = "/datasync/{docType}/{docId:.*}",
                     method = RequestMethod.PUT,
                     consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> insertDocument(@RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
@@ -127,7 +126,7 @@ public class IntegrationProtocol {
         }
     }
 
-    @RequestMapping(value = "/datasync/{orgName}/{docType}/{docId:.*}",
+    @RequestMapping(value = "/datasync/{docType}/{docId:.*}",
                     method = RequestMethod.PUT,
                     headers = {ProtocolConstants.IF_MATCH},
                     consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -160,7 +159,7 @@ public class IntegrationProtocol {
         }
     }
 
-    @RequestMapping(value = "/datasync/{orgName}/{docType}/{docId:.*}",
+    @RequestMapping(value = "/datasync/{docType}/{docId:.*}",
                     method = RequestMethod.DELETE,
                     headers = {ProtocolConstants.IF_MATCH})
     public ResponseEntity<?> deleteDocument(@RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
@@ -186,7 +185,7 @@ public class IntegrationProtocol {
         }
     }
 
-    @RequestMapping(value = "/datasync/{orgName}/{docType}/{docId}/{name:.*}", method = RequestMethod.PUT)
+    @RequestMapping(value = "/datasync/{docType}/{docId}/{name:.*}", method = RequestMethod.PUT)
     public ResponseEntity<Object> insertAttachment(@RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
                                                    @RequestHeader(ProtocolConstants.X_AIQ_DEVICE_ID) String deviceId,
                                                    @RequestHeader(ProtocolConstants.CONTENT_TYPE) String contentType,
@@ -201,7 +200,7 @@ public class IntegrationProtocol {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @RequestMapping(value = "/datasync/{orgName}/{docType}/{docId}/{name:.*}",
+    @RequestMapping(value = "/datasync/{docType}/{docId}/{name:.*}",
                     method = RequestMethod.PUT,
                     headers = {ProtocolConstants.IF_MATCH})
     public ResponseEntity<Object> updateAttachment(@RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
@@ -219,7 +218,7 @@ public class IntegrationProtocol {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @RequestMapping(value = "/datasync/{orgName}/{docType}/{docId}/{name:.*}",
+    @RequestMapping(value = "/datasync/{docType}/{docId}/{name:.*}",
                     method = RequestMethod.DELETE,
                     headers = {ProtocolConstants.IF_MATCH})
     public ResponseEntity<Object> updateAttachment(@RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
@@ -232,7 +231,7 @@ public class IntegrationProtocol {
         return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @RequestMapping(value = "/logout/{orgName}", method = RequestMethod.POST)
+    @RequestMapping(value = "/logout", method = RequestMethod.POST)
     public ResponseEntity<Object> logout(@PathVariable(ORG_NAME) String orgName,
                                          @RequestBody LogoutRequest request) {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -243,7 +242,7 @@ public class IntegrationProtocol {
         return new ResponseEntity<>(mapper.createObjectNode(), HttpStatus.OK);
     }
 
-    @RequestMapping(value = "/comessage/{orgName}/{destination}",
+    @RequestMapping(value = "/comessage/{destination}",
                     method = RequestMethod.POST,
                     consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
                     produces = MediaType.APPLICATION_JSON_VALUE)

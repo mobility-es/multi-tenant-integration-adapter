@@ -1,6 +1,5 @@
-package com.appearnetworks.aiq.multitenant.impl.server;
+package com.appearnetworks.aiq.multitenant.server;
 
-import com.appearnetworks.aiq.multitenant.server.User;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -14,7 +13,6 @@ public class AccessToken {
     private String token_type;
     private String scope;
     private String expires_in;
-    private User user;
     private ObjectNode links;
 
     public AccessToken() { }
@@ -33,10 +31,6 @@ public class AccessToken {
 
     public String getScope() {
         return scope;
-    }
-
-    public User getUser() {
-        return user;
     }
 
     public ObjectNode getLinks() {
