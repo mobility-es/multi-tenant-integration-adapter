@@ -8,14 +8,14 @@ import java.util.Collection;
 
 public interface PersistenceService {
 
-    Collection<DocumentReference> list(String orgName);
+    Collection<DocumentReference> list(String orgId, String solutionId);
 
-    ObjectNode retrieve(String orgName, String docId);
+    ObjectNode retrieve(String orgId, String solutionId, String docId);
 
-    long insert(String orgName, DocumentReference docRef, ObjectNode doc) throws UpdateException;
+    long insert(String orgId, String solutionId, DocumentReference docRef, ObjectNode doc) throws UpdateException;
 
-    long update(String orgName, DocumentReference docRef, ObjectNode doc) throws UpdateException;
+    long update(String orgId, String solutionId, DocumentReference docRef, ObjectNode doc) throws UpdateException;
 
-    void delete(String orgName, DocumentReference docRef) throws UpdateException;
+    void delete(String orgId, String solutionId, DocumentReference docRef) throws UpdateException;
 
 }
