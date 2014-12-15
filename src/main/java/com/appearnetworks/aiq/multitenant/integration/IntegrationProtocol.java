@@ -31,12 +31,13 @@ import java.util.logging.Logger;
  * Implement the AIQ 8 integration protocol.
  */
 @Controller
-@RequestMapping(value = "/aiq/integration/{orgName}")
+@RequestMapping(value = "/aiq/integration/{orgName}/{solutionId}")
 public class IntegrationProtocol {
 
     private static Logger LOGGER = Logger.getLogger(IntegrationProtocol.class.getName());
 
     private static final String ORG_NAME = "orgName";
+    private static final String SOLUTION_ID = "solutionId";
     private static final String USER_ID = "userId";
     private static final String DOC_TYPE = "docType";
     private static final String DOC_ID = "docId";
@@ -60,19 +61,21 @@ public class IntegrationProtocol {
     public
     @ResponseBody
     ListDocumentsResponse listDocuments(@PathVariable(ORG_NAME) String orgName,
+                                        @PathVariable(SOLUTION_ID) String solutionId,
                                         @RequestParam(value = USER_ID, required = false) String userId) {
         LOGGER.info("Listing documents in organization " + orgName);
-        return new ListDocumentsResponse(persistenceService.list(orgName));
+        return new ListDocumentsResponse(persistenceService.list(orgName, solutionId));
     }
 
     @RequestMapping(value = "/datasync/{docType}/{docId:.*}",
                     method = RequestMethod.GET,
                     produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ObjectNode> getDocument(@PathVariable(ORG_NAME) String orgName,
+                                                  @PathVariable(SOLUTION_ID) String solutionId,
                                                   @PathVariable(DOC_TYPE) String docType,
                                                   @PathVariable(DOC_ID) String docId) {
         LOGGER.info("Getting document " + docId + " in organization " + orgName);
-        Object document = persistenceService.retrieve(orgName, docId);
+        Object document = persistenceService.retrieve(orgName, solutionId, docId);
         if (document == null) {
             LOGGER.warning("Document " + docId + " not found in organization " + orgName);
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -89,6 +92,7 @@ public class IntegrationProtocol {
 
     @RequestMapping(value = "/datasync/{docType}/{docId}/{name:.*}", method = RequestMethod.GET)
     public void getAttachment(@PathVariable(ORG_NAME) String orgName,
+                              @PathVariable(SOLUTION_ID) String solutionId,
                               @PathVariable(DOC_TYPE) String docType,
                               @PathVariable(DOC_ID) String docId,
                               @PathVariable(NAME) String name,
@@ -102,6 +106,7 @@ public class IntegrationProtocol {
     public ResponseEntity<?> insertDocument(@RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
                                             @RequestHeader(ProtocolConstants.X_AIQ_DEVICE_ID) String deviceId,
                                             @PathVariable(ORG_NAME) String orgName,
+                                            @PathVariable(SOLUTION_ID) String solutionId,
                                             @PathVariable(DOC_TYPE) String docType,
                                             @PathVariable(DOC_ID) String docId,
                                             @RequestBody ObjectNode doc) {
@@ -115,7 +120,11 @@ public class IntegrationProtocol {
                     return new ResponseEntity<>(backendContext, responseHeaders, HttpStatus.CREATED);
 
                 default:
-                    long revision = persistenceService.insert(orgName, new DocumentReference(docId, docType, 0), doc);
+                    long revision = persistenceService.insert(
+                            orgName,
+                            solutionId,
+                            new DocumentReference(docId, docType, 0),
+                            doc);
                     responseHeaders.setETag(makeETag(revision));
                     return new ResponseEntity<>(responseHeaders, HttpStatus.CREATED);
             }
@@ -134,6 +143,7 @@ public class IntegrationProtocol {
                                             @RequestHeader(ProtocolConstants.X_AIQ_DEVICE_ID) String deviceId,
                                             @RequestHeader(ProtocolConstants.IF_MATCH) String ifMatch,
                                             @PathVariable(ORG_NAME) String orgName,
+                                            @PathVariable(SOLUTION_ID) String solutionId,
                                             @PathVariable(DOC_TYPE) String docType,
                                             @PathVariable(DOC_ID) String docId,
                                             @RequestBody ObjectNode doc) {
@@ -147,9 +157,11 @@ public class IntegrationProtocol {
                     return new ResponseEntity<>(responseHeaders, HttpStatus.NO_CONTENT);
 
                 default:
-                    long revision = persistenceService.update(orgName,
-                                                              new DocumentReference(docId, docType, currentRevision),
-                                                              doc);
+                    long revision = persistenceService.update(
+                            orgName,
+                            solutionId,
+                            new DocumentReference(docId, docType, currentRevision),
+                            doc);
                     responseHeaders.setETag(makeETag(revision));
                     return new ResponseEntity<>(responseHeaders, HttpStatus.NO_CONTENT);
             }
@@ -166,6 +178,7 @@ public class IntegrationProtocol {
                                             @RequestHeader(ProtocolConstants.X_AIQ_DEVICE_ID) String deviceId,
                                             @RequestHeader(ProtocolConstants.IF_MATCH) String ifMatch,
                                             @PathVariable(ORG_NAME) String orgName,
+                                            @PathVariable(SOLUTION_ID) String solutionId,
                                             @PathVariable(DOC_TYPE) String docType,
                                             @PathVariable(DOC_ID) String docId) {
         LOGGER.info("Deleting document " + docId + " in organization " + orgName);
@@ -176,7 +189,10 @@ public class IntegrationProtocol {
                     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 
                 default:
-                    persistenceService.delete(orgName, new DocumentReference(docId, docType, currentRevision));
+                    persistenceService.delete(
+                            orgName,
+                            solutionId,
+                            new DocumentReference(docId, docType, currentRevision));
                     return new ResponseEntity<>(HttpStatus.NO_CONTENT);
             }
         } catch (UpdateException e) {
@@ -193,6 +209,7 @@ public class IntegrationProtocol {
                                                                   required = false,
                                                                   defaultValue = "-1") long contentLength,
                                                    @PathVariable(ORG_NAME) String orgName,
+                                                   @PathVariable(SOLUTION_ID) String solutionId,
                                                    @PathVariable(DOC_TYPE) String docType,
                                                    @PathVariable(DOC_ID) String docId,
                                                    @PathVariable(NAME) String name,
@@ -211,6 +228,7 @@ public class IntegrationProtocol {
                                                                   required = false,
                                                                   defaultValue = "-1") long contentLength,
                                                    @PathVariable(ORG_NAME) String orgName,
+                                                   @PathVariable(SOLUTION_ID) String solutionId,
                                                    @PathVariable(DOC_TYPE) String docType,
                                                    @PathVariable(DOC_ID) String docId,
                                                    @PathVariable(NAME) String name,
@@ -233,6 +251,7 @@ public class IntegrationProtocol {
 
     @RequestMapping(value = "/logout", method = RequestMethod.POST)
     public ResponseEntity<Object> logout(@PathVariable(ORG_NAME) String orgName,
+                                         @PathVariable(SOLUTION_ID) String solutionId,
                                          @RequestBody LogoutRequest request) {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
@@ -247,6 +266,7 @@ public class IntegrationProtocol {
                     consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
                     produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ObjectNode> coMessage(@PathVariable(ORG_NAME) String orgName,
+                                                @PathVariable(SOLUTION_ID) String solutionId,
                                                 @PathVariable("destination") String destination,
                                                 @RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
                                                 @RequestHeader(ProtocolConstants.X_AIQ_DEVICE_ID) String deviceId,

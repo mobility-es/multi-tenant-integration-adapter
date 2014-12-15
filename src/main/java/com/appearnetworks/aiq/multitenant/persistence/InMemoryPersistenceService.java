@@ -18,20 +18,31 @@ public class InMemoryPersistenceService implements PersistenceService {
 
     private static final String REV = "_rev";
 
-    private final ConcurrentMap<String, ConcurrentMap<String, BusinessDocument>> organizations = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ConcurrentMap<String, ConcurrentMap<String, BusinessDocument>>> organizations = new ConcurrentHashMap<>();
 
     @Override
-    public Collection<DocumentReference> list(String orgName) {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
+    public Collection<DocumentReference> list(String orgName, String solutionId) {
+        ConcurrentMap<String, ConcurrentMap<String, BusinessDocument>> solutions = organizations.get(orgName);
+        if (solutions == null) {
+            return Collections.emptyList();
+        }
+
+        ConcurrentMap<String, BusinessDocument> documents = solutions.get(solutionId);
         if (documents == null) {
             return Collections.emptyList();
         }
+
         return documents.values().stream().map(DocumentReference::new).collect(Collectors.toList());
     }
 
     @Override
-    public ObjectNode retrieve(String orgName, String docId) {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
+    public ObjectNode retrieve(String orgName, String solutionId, String docId) {
+        ConcurrentMap<String, ConcurrentMap<String, BusinessDocument>> solutions = organizations.get(orgName);
+        if (solutions == null) {
+            return null;
+        }
+
+        ConcurrentMap<String, BusinessDocument> documents = solutions.get(solutionId);
         if (documents == null) {
             return null;
         }
@@ -41,11 +52,15 @@ public class InMemoryPersistenceService implements PersistenceService {
     }
 
     @Override
-    public long insert(String orgName, DocumentReference docRef, ObjectNode body) throws UpdateException {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
+    public long insert(String orgName, String solutionId, DocumentReference docRef, ObjectNode body) throws UpdateException {
+        ConcurrentMap<String, ConcurrentMap<String, BusinessDocument>> solutions = organizations.get(orgName);
+        if (solutions == null) {
+            solutions = new ConcurrentHashMap<>();
+        }
+
+        ConcurrentMap<String, BusinessDocument> documents = solutions.get(solutionId);
         if (documents == null) {
             documents = new ConcurrentHashMap<>();
-            organizations.put(orgName, documents);
         }
 
         long initialRevision = 1;
@@ -56,12 +71,20 @@ public class InMemoryPersistenceService implements PersistenceService {
             throw new UpdateException(HttpStatus.CONFLICT);
         }
 
+        solutions.put(solutionId, documents);
+        organizations.put(orgName, solutions);
+
         return initialRevision;
     }
 
     @Override
-    public long update(String orgName, DocumentReference docRef, ObjectNode body) throws UpdateException {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
+    public long update(String orgName, String solutionId, DocumentReference docRef, ObjectNode body) throws UpdateException {
+        ConcurrentMap<String, ConcurrentMap<String, BusinessDocument>> solutions = organizations.get(orgName);
+        if (solutions == null) {
+            throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
+        }
+
+        ConcurrentMap<String, BusinessDocument> documents = solutions.get(solutionId);
         if (documents == null) {
             throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
         }
@@ -80,8 +103,13 @@ public class InMemoryPersistenceService implements PersistenceService {
     }
 
     @Override
-    public void delete(String orgName, DocumentReference docRef) throws UpdateException {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
+    public void delete(String orgName, String solutionId, DocumentReference docRef) throws UpdateException {
+        ConcurrentMap<String, ConcurrentMap<String, BusinessDocument>> solutions = organizations.get(orgName);
+        if (solutions == null) {
+            throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
+        }
+
+        ConcurrentMap<String, BusinessDocument> documents = solutions.get(solutionId);
         if (documents == null) {
             throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
         }
@@ -91,6 +119,10 @@ public class InMemoryPersistenceService implements PersistenceService {
         }
 
         if (documents.size() == 0) {
+            solutions.remove(solutionId);
+        }
+
+        if (solutions.size() == 0) {
             organizations.remove(orgName);
         }
     }
