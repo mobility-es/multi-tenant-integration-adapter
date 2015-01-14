@@ -113,21 +113,13 @@ public class IntegrationProtocol {
         LOGGER.info("Inserting document " + docId + " in organization " + orgId);
         try {
             HttpHeaders responseHeaders = new HttpHeaders();
-            switch (docType) {
-                case ProtocolConstants.CLIENT_SESSION_DOC_TYPE:
-                    ObjectNode backendContext = mapper.createObjectNode();
-                    responseHeaders.setETag(makeETag(1));
-                    return new ResponseEntity<>(backendContext, responseHeaders, HttpStatus.CREATED);
-
-                default:
-                    long revision = persistenceService.insert(
-                            orgId,
-                            solutionId,
-                            new DocumentReference(docId, docType, 0),
-                            doc);
-                    responseHeaders.setETag(makeETag(revision));
-                    return new ResponseEntity<>(responseHeaders, HttpStatus.CREATED);
-            }
+            long revision = persistenceService.insert(
+                    orgId,
+                    solutionId,
+                    new DocumentReference(docId, docType, 0),
+                    doc);
+            responseHeaders.setETag(makeETag(revision));
+            return new ResponseEntity<>(responseHeaders, HttpStatus.CREATED);
 
         } catch (UpdateException e) {
             LOGGER.log(Level.WARNING, "Could not insert document " + docId + " in organization " + orgId, e);
@@ -151,20 +143,13 @@ public class IntegrationProtocol {
         try {
             long currentRevision = parseRevision(ifMatch);
             HttpHeaders responseHeaders = new HttpHeaders();
-            switch (docType) {
-                case ProtocolConstants.CLIENT_SESSION_DOC_TYPE:
-                    responseHeaders.setETag(makeETag(currentRevision + 1));
-                    return new ResponseEntity<>(responseHeaders, HttpStatus.NO_CONTENT);
-
-                default:
-                    long revision = persistenceService.update(
-                            orgId,
-                            solutionId,
-                            new DocumentReference(docId, docType, currentRevision),
-                            doc);
-                    responseHeaders.setETag(makeETag(revision));
-                    return new ResponseEntity<>(responseHeaders, HttpStatus.NO_CONTENT);
-            }
+            long revision = persistenceService.update(
+                    orgId,
+                    solutionId,
+                    new DocumentReference(docId, docType, currentRevision),
+                    doc);
+            responseHeaders.setETag(makeETag(revision));
+            return new ResponseEntity<>(responseHeaders, HttpStatus.NO_CONTENT);
         } catch (UpdateException e) {
             LOGGER.log(Level.WARNING, "Could not update document " + docId + " in organization " + orgId, e);
             return new ResponseEntity<>(e.getStatusCode());
@@ -184,17 +169,11 @@ public class IntegrationProtocol {
         LOGGER.info("Deleting document " + docId + " in organization " + orgId);
         try {
             long currentRevision = parseRevision(ifMatch);
-            switch (docType) {
-                case "_clientsession":
-                    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-
-                default:
-                    persistenceService.delete(
-                            orgId,
-                            solutionId,
-                            new DocumentReference(docId, docType, currentRevision));
-                    return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-            }
+            persistenceService.delete(
+                    orgId,
+                    solutionId,
+                    new DocumentReference(docId, docType, currentRevision));
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (UpdateException e) {
             LOGGER.log(Level.WARNING, "Could not delete document " + docId + " in organization " + orgId, e);
             return new ResponseEntity<>(e.getStatusCode());
@@ -255,6 +234,29 @@ public class IntegrationProtocol {
                                          @PathVariable(SOLUTION_ID) String solutionId,
                                          @RequestBody LogoutRequest request) {
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @RequestMapping(value = "/clientsessions", method = RequestMethod.POST, headers = {ProtocolConstants.SLUG}, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> createClientSession(@RequestHeader(ProtocolConstants.SLUG) String sessionId,
+                                                 @RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
+                                                 @RequestHeader(ProtocolConstants.X_AIQ_DEVICE_ID) String deviceId,
+                                                 @RequestBody ObjectNode doc) {
+        return new ResponseEntity<Object>(HttpStatus.CREATED);
+    }
+
+    @RequestMapping(value = "/clientsessions/{sessionId:.*}", method = RequestMethod.PUT, consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateClientSession(@PathVariable("sessionId") String sessionId,
+                                                 @RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
+                                                 @RequestHeader(ProtocolConstants.X_AIQ_DEVICE_ID) String deviceId,
+                                                 @RequestBody ObjectNode doc) {
+        return new ResponseEntity<Object>(HttpStatus.NO_CONTENT);
+    }
+
+    @RequestMapping(value = "/clientsessions/{sessionId:.*}", method = RequestMethod.DELETE)
+    public ResponseEntity<?> removeClientSession(@PathVariable("sessionId") String sessionId,
+                                                 @RequestHeader(ProtocolConstants.X_AIQ_USER_ID) String userId,
+                                                 @RequestHeader(ProtocolConstants.X_AIQ_DEVICE_ID) String deviceId) {
+        return new ResponseEntity<Object>(HttpStatus.NO_CONTENT);
     }
 
     @RequestMapping(value = "/heartbeat", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
