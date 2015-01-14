@@ -63,7 +63,7 @@ public class IntegrationProtocol {
     ListDocumentsResponse listDocuments(@PathVariable(ORG_ID) String orgId,
                                         @PathVariable(SOLUTION_ID) String solutionId,
                                         @RequestParam(value = USER_ID, required = false) String userId) {
-        LOGGER.info("Listing documents in organization " + orgId);
+        LOGGER.fine("Listing documents in organization " + orgId);
         return new ListDocumentsResponse(persistenceService.list(orgId, solutionId));
     }
 
@@ -74,7 +74,7 @@ public class IntegrationProtocol {
                                                   @PathVariable(SOLUTION_ID) String solutionId,
                                                   @PathVariable(DOC_TYPE) String docType,
                                                   @PathVariable(DOC_ID) String docId) {
-        LOGGER.info("Getting document " + docId + " in organization " + orgId);
+        LOGGER.fine("Getting document " + docId + " in organization " + orgId);
         Object document = persistenceService.retrieve(orgId, solutionId, docId);
         if (document == null) {
             LOGGER.warning("Document " + docId + " not found in organization " + orgId);
