@@ -9,8 +9,8 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Repository
@@ -18,20 +18,31 @@ public class InMemoryPersistenceService implements PersistenceService {
 
     private static final String REV = "_rev";
 
-    private final ConcurrentMap<String, ConcurrentMap<String, BusinessDocument>> organizations = new ConcurrentHashMap<>();
+    private final Map<String, Map<String, Map<String, BusinessDocument>>> organizations = new HashMap<>();
 
     @Override
-    public Collection<DocumentReference> list(String orgName) {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
+    public synchronized Collection<DocumentReference> list(String orgId, String solutionId) {
+        Map<String, Map<String, BusinessDocument>> solutions = organizations.get(orgId);
+        if (solutions == null) {
+            return Collections.emptyList();
+        }
+
+        Map<String, BusinessDocument> documents = solutions.get(solutionId);
         if (documents == null) {
             return Collections.emptyList();
         }
+
         return documents.values().stream().map(DocumentReference::new).collect(Collectors.toList());
     }
 
     @Override
-    public ObjectNode retrieve(String orgName, String docId) {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
+    public synchronized ObjectNode retrieve(String orgId, String solutionId, String docId) {
+        Map<String, Map<String, BusinessDocument>> solutions = organizations.get(orgId);
+        if (solutions == null) {
+            return null;
+        }
+
+        Map<String, BusinessDocument> documents = solutions.get(solutionId);
         if (documents == null) {
             return null;
         }
@@ -41,11 +52,17 @@ public class InMemoryPersistenceService implements PersistenceService {
     }
 
     @Override
-    public long insert(String orgName, DocumentReference docRef, ObjectNode body) throws UpdateException {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
-        if (documents == null) {
-            documents = new ConcurrentHashMap<>();
-            organizations.put(orgName, documents);
+    public synchronized long insert(String orgId, String solutionId, DocumentReference docRef, ObjectNode body) throws UpdateException {
+        Map<String, Map<String, BusinessDocument>> solutions = organizations.get(orgId);
+        boolean hasOrganization = (solutions != null);
+        if (! hasOrganization) {
+            solutions = new HashMap<>();
+        }
+
+        Map<String, BusinessDocument> documents = solutions.get(solutionId);
+        boolean hasSolution = (documents != null);
+        if (! hasSolution) {
+            documents = new HashMap<>();
         }
 
         long initialRevision = 1;
@@ -55,13 +72,25 @@ public class InMemoryPersistenceService implements PersistenceService {
         if (documents.putIfAbsent(docRef._id, new BusinessDocument(docRef._id, docRef._type, initialRevision, body)) != null) {
             throw new UpdateException(HttpStatus.CONFLICT);
         }
+        
+        if (! hasSolution) {
+            solutions.put(solutionId, documents);
+        }
+        if (! hasOrganization) {
+            organizations.put(orgId, solutions);
+        }
 
         return initialRevision;
     }
 
     @Override
-    public long update(String orgName, DocumentReference docRef, ObjectNode body) throws UpdateException {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
+    public synchronized long update(String orgId, String solutionId, DocumentReference docRef, ObjectNode body) throws UpdateException {
+        Map<String, Map<String, BusinessDocument>> solutions = organizations.get(orgId);
+        if (solutions == null) {
+            throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
+        }
+
+        Map<String, BusinessDocument> documents = solutions.get(solutionId);
         if (documents == null) {
             throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
         }
@@ -70,9 +99,10 @@ public class InMemoryPersistenceService implements PersistenceService {
 
         body.put(REV, updatedRevision);
 
-        if (! documents.replace(docRef._id,
-                                new BusinessDocument(docRef._id, docRef._type, docRef._rev, null),
-                                  new BusinessDocument(docRef._id, docRef._type, updatedRevision, body))) {
+        if (! documents.replace(
+                docRef._id,
+                new BusinessDocument(docRef._id, docRef._type, docRef._rev, null),
+                new BusinessDocument(docRef._id, docRef._type, updatedRevision, body))) {
             throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
         }
 
@@ -80,8 +110,13 @@ public class InMemoryPersistenceService implements PersistenceService {
     }
 
     @Override
-    public void delete(String orgName, DocumentReference docRef) throws UpdateException {
-        ConcurrentMap<String, BusinessDocument> documents = organizations.get(orgName);
+    public synchronized void delete(String orgId, String solutionId, DocumentReference docRef) throws UpdateException {
+        Map<String, Map<String, BusinessDocument>> solutions = organizations.get(orgId);
+        if (solutions == null) {
+            throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
+        }
+
+        Map<String, BusinessDocument> documents = solutions.get(solutionId);
         if (documents == null) {
             throw new UpdateException(HttpStatus.PRECONDITION_FAILED);
         }
@@ -91,7 +126,11 @@ public class InMemoryPersistenceService implements PersistenceService {
         }
 
         if (documents.size() == 0) {
-            organizations.remove(orgName);
+            solutions.remove(solutionId);
+        }
+
+        if (solutions.size() == 0) {
+            organizations.remove(orgId);
         }
     }
 }
